@@ -23,11 +23,11 @@ defmodule Defmock do
       end
 
       def mock(method_name, value, arity \\ 0) when is_atom(method_name) do
-        Agent.update(__MODULE__, fn(map) -> Map.put(map, :"#{method_name}/#{arity}", value) end)
+        Agent.update(__MODULE__, fn(map) -> Map.put(map, [method_name, arity], value) end)
       end
 
       def call_mock(method_name, args \\ []) do
-        Agent.get(__MODULE__, fn(map) -> Map.fetch!(map, :"#{method_name}/#{length(args)}") end) |> call_mock_value(args)
+        Agent.get(__MODULE__, fn(map) -> Map.fetch!(map, [method_name, length(args)]) end) |> call_mock_value(args)
       end
 
       defp call_mock_value(f, args) when is_function(f) and is_list(args) do

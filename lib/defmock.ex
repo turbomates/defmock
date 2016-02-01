@@ -27,16 +27,19 @@ defmodule Defmock do
       end
 
       def call_mock(method_name, args \\ []) do
-        Agent.get(__MODULE__, fn(map) -> Map.fetch!(map, [method_name, length(args)]) end) |> call_mock_value(args)
+        Agent.get(__MODULE__, fn(map) ->
+          key = [method_name, length(args)]
+          if Map.has_key?(map, key) do
+            {:ok, Map.fetch!(map, key)}
+          else
+            {:error, {:mock_error, "Mock is not set"}}
+          end
+        end) |> call_mock_value(args)
       end
 
-      defp call_mock_value(f, args) when is_function(f) and is_list(args) do
-        apply(f, args)
-      end
-
-      defp call_mock_value(v, _) do
-        v
-      end
+      defp call_mock_value({:error, {:mock_error, _}} = e, _), do: e
+      defp call_mock_value({:ok, f}, args) when is_function(f) and is_list(args), do: apply(f, args)
+      defp call_mock_value({:ok, v}, _), do: v
     end
   end
 

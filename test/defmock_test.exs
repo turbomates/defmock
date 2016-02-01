@@ -16,10 +16,6 @@ defmodule DefmockTest do
     :ok
   end
 
-  test "the truth" do
-    assert 1 + 1 == 2
-  end
-
   test "method_name in atom without arity" do
     mock(:test_method, {:ok, %{}})
     {:ok, %{}} = test_method
@@ -40,5 +36,9 @@ defmodule DefmockTest do
     mock([test_method: 1], fn(m) -> {:ok, %{value: m}} end)
     {:ok, %{value: :first_v}} = test_method(:first_v)
     {:ok, %{}} = test_method()
+  end
+
+  test "mock is not set" do
+    {:error, {:mock_error, _}} = test_method
   end
 end

@@ -44,12 +44,12 @@ defmodule Defmock do
     Enum.map(args, fn({fun_name, arity}) ->
       arg_str = if arity > 0, do: Enum.map(1..arity, &("v#{&1}")) |> Enum.join(","), else: ""
       quote do
-        def unquote(fun_name)(variebles) do
-          call_mock(unquote(fun_name), [variebles])
+        def unquote(fun_name)(fun_arguments) do
+          call_mock(unquote(fun_name), [fun_arguments])
         end
       end
       |> Macro.to_string
-      |> String.replace("variebles", arg_str)
+      |> String.replace("fun_arguments", arg_str)
       |> Code.string_to_quoted!
     end)
   end

@@ -5,42 +5,31 @@ defmodule DefmockTest do
   defmodule API do
     use Defmock
 
-    defmock test_method: 1, test_method: 0, test_method: 3
+    defmock test_method: 0, test_method: 1, test_method: 2
   end
 
 
   setup_all do
-    API.start_link
+    API.start_mock
     :ok
   end
 
   setup do
-    on_exit(fn -> API.clear end)
+    on_exit(fn -> API.clear_mock end)
   end
 
-  test "method_name in atom without arity" do
-    API.mock(:test_method, {:ok, %{}})
-    {:ok, %{}} = API.test_method
+  test "mock single method" do
+    API.mock(test_method: fn -> :fn end)
+    assert API.test_method == :fn
   end
 
-  test "method_name in list without arity" do
-    API.mock([test_method: 0], {:ok, %{}})
-    {:ok, %{}} = API.test_method
-  end
-
-  test "method_name in list with 1 arity" do
-    API.mock([test_method: 1], fn([first_v: :test]) -> {:ok, %{}} end)
-    {:ok, %{}} = API.test_method([first_v: :test])
-  end
-
-  test "list method_names" do
-    API.mock([test_method: 0, test_method: 3], {:ok, %{}})
-    API.mock([test_method: 1], fn(m) -> {:ok, %{value: m}} end)
-    {:ok, %{value: :first_v}} = API.test_method(:first_v)
-    {:ok, %{}} = API.test_method
+  test "mock multiple methods" do
+    API.mock(test_method: fn -> :fn0 end, test_method: fn(_) -> :fn1 end)
+    assert API.test_method == :fn0
+    assert API.test_method(1) == :fn1
   end
 
   test "mock is not set" do
-    {:error, {:mock_error, _}} = API.test_method
+    {:error, :undefined} = API.test_method
   end
 end

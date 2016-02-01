@@ -4,11 +4,11 @@ defmodule Defmock do
       require Defmock
       import Defmock
 
-      def start_link do
+      def start_mock do
         Agent.start_link(fn -> Map.new end, name: __MODULE__)
       end
 
-      def clear do
+      def clear_mock do
         Agent.update(__MODULE__, fn(_) -> Map.new end)
       end
 
@@ -16,14 +16,20 @@ defmodule Defmock do
         Agent.stop(__MODULE__)
       end
 
-      def mock(method_names, value) when is_list(method_names) do
-        Enum.each(method_names, fn({method_name, arity}) ->
-          mock(method_name, value, arity)
-        end)
+      def mock([]) do
+        :ok
       end
 
-      def mock(method_name, value, arity \\ 0) when is_atom(method_name) do
-        Agent.update(__MODULE__, fn(map) -> Map.put(map, [method_name, arity], value) end)
+      def mock([]), do: :ok
+
+      def mock([{method_name, fun} | t]) do
+        mock(method_name, fun)
+        mock(t)
+      end
+
+      def mock(method_name, fun) when is_atom(method_name) and is_function(fun) do
+        {:arity, arity} = :erlang.fun_info(fun, :arity)
+        Agent.update(__MODULE__, fn(map) -> Map.put(map, [method_name, arity], fun) end)
       end
 
       def call_mock(method_name, args \\ []) do
@@ -32,14 +38,13 @@ defmodule Defmock do
           if Map.has_key?(map, key) do
             {:ok, Map.fetch!(map, key)}
           else
-            {:error, {:mock_error, "Mock is not set"}}
+            {:error, :undefined}
           end
         end) |> call_mock_value(args)
       end
 
-      defp call_mock_value({:error, {:mock_error, _}} = e, _), do: e
+      defp call_mock_value({:error, :undefined} = e, _), do: e
       defp call_mock_value({:ok, f}, args) when is_function(f) and is_list(args), do: apply(f, args)
-      defp call_mock_value({:ok, v}, _), do: v
     end
   end
 
